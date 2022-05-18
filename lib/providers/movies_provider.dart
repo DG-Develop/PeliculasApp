@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
-import 'dart:convert' as convert;
 
 import 'package:http/http.dart' as http;
+import 'package:peliculas/models/models.dart';
 
 class MoviesProvider extends ChangeNotifier {
-  String _apiKey = '3e0c2367e836dcdb44854fe160b9cda1';
-  String _baseUrl = 'api.themoviedb.org';
-  String _language = 'es-Es';
+  final String _apiKey = '3e0c2367e836dcdb44854fe160b9cda1';
+  final String _baseUrl = 'api.themoviedb.org';
+  final String _language = 'es-Es';
+
+  List<Movie> onDisplayMovies = [];
+  List<Movie> popularMovies = [];
 
   MoviesProvider() {
-    print('MoviesProvider inicializad');
     getOnDisplayMovies();
+    getPopularMovies();
   }
 
   getOnDisplayMovies() async {
@@ -19,7 +22,21 @@ class MoviesProvider extends ChangeNotifier {
 
     // Await the http get response, then decode the json-formatted response.
     final response = await http.get(url);
-    final Map<String, dynamic> decodedData = convert.jsonDecode(response.body);
-    print(decodedData['results']);
+    final nowPlayingResponse = NowPlayingResponse.fromJson(response.body);
+    onDisplayMovies = nowPlayingResponse.results;
+
+    notifyListeners(); //Le dice a todos los widgets que esten escuchando el objeto
+  }
+
+  getPopularMovies() async {
+    var url = Uri.https(_baseUrl, '/3/movie/popular',
+        {'api_key': _apiKey, 'language': _language, 'page': '1'});
+
+    // Await the http get response, then decode the json-formatted response.
+    final response = await http.get(url);
+    final popularResponse = PopularResponse.fromJson(response.body);
+    popularMovies = [...popularMovies, ...popularResponse.results];
+
+    notifyListeners();
   }
 }
